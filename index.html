@@ -19,9 +19,6 @@
         .token-info { flex-grow: 1; text-align: left; }
         .token-symbol { font-weight: bold; font-size: 1em; }
         .token-balance { font-size: 0.9em; color: #666; }
-        .token-price-change { font-size: 0.8em; margin-top: 4px; }
-        .price-change-gain { color: #28a745; }
-        .price-change-loss { color: #dc3545; }
         .token-value { font-size: 0.9em; font-weight: bold; }
         .connect-section { margin: 15px 0; }
         .connect-btn { background: #007bff; color: #fff; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 1em; width: 100%; box-sizing: border-box; }
@@ -35,7 +32,7 @@
             .token-item { padding: 10px; }
             .connect-btn { padding: 10px; font-size: 0.9em; }
             .status { font-size: 0.8em; }
-            .token-balance, .token-price-change, .token-value { font-size: 0.8em; }
+            .token-balance, .token-value { font-size: 0.8em; }
         }
     </style>
 </head>
@@ -59,7 +56,6 @@
                 <div class="token-info">
                     <div class="token-symbol">BONE</div>
                     <div class="token-balance">0 BONE</div>
-                    <div class="token-price-change" data-token="BONE">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -68,7 +64,6 @@
                 <div class="token-info">
                     <div class="token-symbol">DAMN</div>
                     <div class="token-balance">0 DAMN</div>
-                    <div class="token-price-change" data-token="DAMN">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -77,7 +72,6 @@
                 <div class="token-info">
                     <div class="token-symbol">FEED</div>
                     <div class="token-balance">0 FEED</div>
-                    <div class="token-price-change" data-token="FEED">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -86,7 +80,6 @@
                 <div class="token-info">
                     <div class="token-symbol">WOW</div>
                     <div class="token-balance">0 WOW</div>
-                    <div class="token-price-change" data-token="WOW">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -95,7 +88,6 @@
                 <div class="token-info">
                     <div class="token-symbol">SHIPA</div>
                     <div class="token-balance">0 SHIPA</div>
-                    <div class="token-price-change" data-token="SHIPA">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -104,7 +96,6 @@
                 <div class="token-info">
                     <div class="token-symbol">CHIKA</div>
                     <div class="token-balance">0 CHIKA</div>
-                    <div class="token-price-change" data-token="CHIKA">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -113,7 +104,6 @@
                 <div class="token-info">
                     <div class="token-symbol">WOOF</div>
                     <div class="token-balance">0 WOOF</div>
-                    <div class="token-price-change" data-token="WOOF">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -122,7 +112,6 @@
                 <div class="token-info">
                     <div class="token-symbol">PIKA</div>
                     <div class="token-balance">0 PIKA</div>
-                    <div class="token-price-change" data-token="PIKA">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -131,7 +120,6 @@
                 <div class="token-info">
                     <div class="token-symbol">LUISA</div>
                     <div class="token-balance">0 LUISA</div>
-                    <div class="token-price-change" data-token="LUISA">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -140,7 +128,6 @@
                 <div class="token-info">
                     <div class="token-symbol">SHIBS</div>
                     <div class="token-balance">0 SHIBS</div>
-                    <div class="token-price-change" data-token="SHIBS">0.00% (24h)</div>
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
@@ -153,7 +140,7 @@
         const shibarium = { chainId: 109, chainName: 'Shibarium', nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 }, rpcUrls: ['https://rpc.shibrpc.com'], blockExplorerUrls: ['https://shibariumscan.io'] };
         const erc20ABI = [{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"}];
         const tokens = [
-            { address: "0x0000000000000000000000000000000000000000", symbol: "BONE", logo: "images/bone.png" },
+            { address: "0x0000000000000000000000000000000000001010", symbol: "BONE", logo: "images/bone.png" }, // Updated to wrapped BONE address for API
             { address: "0xeCe898EdCc0AF91430603175F945D8de75291c70", symbol: "DAMN", logo: "images/damn.png" },
             { address: "0xe9Cb2D7ADC24Fc59FE00D6C0A0669BDF16805Fe0", symbol: "FEED", logo: "images/feed.png" },
             { address: "0x8f4b11d923BbAA6206f3Dd3ff84e8e31bafB49b7", symbol: "WOW", logo: "images/wow.png" },
@@ -168,7 +155,7 @@
         // Function to format price with appropriate decimal places
         function formatPrice(price) {
             const num = parseFloat(price);
-            if (isNaN(num) || num === 0) return "0.00";
+            if (isNaN(num) || num === 0) return "$0.00";
             if (num >= 1) return num.toFixed(2);
             if (num >= 0.01) return num.toFixed(4);
             if (num >= 0.0001) return num.toFixed(6);
@@ -220,10 +207,11 @@
             const tokenItems = tokenList.getElementsByClassName('token-item');
             for (let i = 0; i < tokens.length; i++) {
                 const token = tokens[i];
-                let balance, price = 0, priceChange24h = 0;
-                
+                let balance, price = 0;
+
                 // Fetch balance
-                if (token.address === "0x0000000000000000000000000000000000000000") {
+                if (token.address === "0x0000000000000000000000000000000000001010") {
+                    // Use native balance for BONE
                     const balanceWei = await web3.eth.getBalance(accounts[0]);
                     balance = web3.utils.fromWei(balanceWei, 'ether');
                 } else {
@@ -232,17 +220,14 @@
                     balance = web3.utils.fromWei(balanceWei, 'ether');
                 }
 
-                // Fetch price and 24h price change from GeckoTerminal API
+                // Fetch price from GeckoTerminal API
                 try {
                     const response = await fetch(`https://api.geckoterminal.com/api/v2/networks/shibarium/tokens/${token.address}`);
                     const data = await response.json();
                     price = parseFloat(data.data.attributes.price_usd) || 0;
-                    // Access 24-hour price change percentage
-                    priceChange24h = parseFloat(data.data.attributes.price_change_percentage?.h24) || 0;
                 } catch (error) {
                     console.error(`Failed to fetch price for ${token.symbol}:`, error);
                     price = 0;
-                    priceChange24h = 0;
                 }
 
                 const usdValue = parseFloat(balance) * price;
@@ -253,16 +238,6 @@
 
                 // Update USD value with dynamic decimal places
                 tokenItems[i].querySelector('.token-value').innerText = `$${formatPrice(usdValue)}`;
-
-                // Update 24h price change with color
-                const priceChangeElement = tokenItems[i].querySelector('.token-price-change');
-                priceChangeElement.innerText = `${priceChange24h.toFixed(2)}% (24h)`;
-                priceChangeElement.classList.remove('price-change-gain', 'price-change-loss');
-                if (priceChange24h > 0) {
-                    priceChangeElement.classList.add('price-change-gain');
-                } else if (priceChange24h < 0) {
-                    priceChangeElement.classList.add('price-change-loss');
-                }
             }
             document.getElementById('totalBalance').innerText = `$${totalUSD.toFixed(2)} USD`;
         }
