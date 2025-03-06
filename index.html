@@ -140,7 +140,7 @@
         const shibarium = { chainId: 109, chainName: 'Shibarium', nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 }, rpcUrls: ['https://rpc.shibrpc.com'], blockExplorerUrls: ['https://shibariumscan.io'] };
         const erc20ABI = [{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"}];
         const tokens = [
-            { address: "0x0000000000000000000000000000000000001010", symbol: "BONE", logo: "images/bone.png" }, // Updated to wrapped BONE address for API
+            { address: "0x0000000000000000000000000000000000001010", symbol: "BONE", logo: "images/bone.png" }, // wBONE address for API and balance
             { address: "0xeCe898EdCc0AF91430603175F945D8de75291c70", symbol: "DAMN", logo: "images/damn.png" },
             { address: "0xe9Cb2D7ADC24Fc59FE00D6C0A0669BDF16805Fe0", symbol: "FEED", logo: "images/feed.png" },
             { address: "0x8f4b11d923BbAA6206f3Dd3ff84e8e31bafB49b7", symbol: "WOW", logo: "images/wow.png" },
@@ -156,10 +156,10 @@
         function formatPrice(price) {
             const num = parseFloat(price);
             if (isNaN(num) || num === 0) return "$0.00";
-            if (num >= 1) return num.toFixed(2);
-            if (num >= 0.01) return num.toFixed(4);
-            if (num >= 0.0001) return num.toFixed(6);
-            return num.toFixed(8);
+            if (num >= 1) return "$" + num.toFixed(2);
+            if (num >= 0.01) return "$" + num.toFixed(4);
+            if (num >= 0.0001) return "$" + num.toFixed(6);
+            return "$" + num.toFixed(8); // Ensure single $ prefix
         }
 
         async function connectWallet() {
@@ -209,16 +209,10 @@
                 const token = tokens[i];
                 let balance, price = 0;
 
-                // Fetch balance
-                if (token.address === "0x0000000000000000000000000000000000001010") {
-                    // Use native balance for BONE
-                    const balanceWei = await web3.eth.getBalance(accounts[0]);
-                    balance = web3.utils.fromWei(balanceWei, 'ether');
-                } else {
-                    const tokenContract = new web3.eth.Contract(erc20ABI, token.address);
-                    const balanceWei = await tokenContract.methods.balanceOf(accounts[0]).call();
-                    balance = web3.utils.fromWei(balanceWei, 'ether');
-                }
+                // Fetch balance using ERC-20 balanceOf for wBONE
+                const tokenContract = new web3.eth.Contract(erc20ABI, token.address);
+                const balanceWei = await tokenContract.methods.balanceOf(accounts[0]).call();
+                balance = web3.utils.fromWei(balanceWei, 'ether');
 
                 // Fetch price from GeckoTerminal API
                 try {
@@ -237,7 +231,7 @@
                 tokenItems[i].querySelector('.token-balance').innerText = `${parseFloat(balance).toFixed(3)} ${token.symbol}`;
 
                 // Update USD value with dynamic decimal places
-                tokenItems[i].querySelector('.token-value').innerText = `$${formatPrice(usdValue)}`;
+                tokenItems[i].querySelector('.token-value').innerText = formatPrice(usdValue);
             }
             document.getElementById('totalBalance').innerText = `$${totalUSD.toFixed(2)} USD`;
         }
