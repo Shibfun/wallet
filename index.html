@@ -47,8 +47,7 @@
             <div class="network">
                 <img src="images/shibarium.png" alt="Shibarium"> Shibarium
             </div>
-            <!-- Removed user-info from header -->
-            <div style="width: 24px;"></div> <!-- Placeholder to balance the layout -->
+            <div style="width: 24px;"></div>
         </div>
         <div class="profile-section">
             <img class="avatar" id="userAvatar" src="images/default-avatar.png" alt="Avatar">
@@ -70,7 +69,78 @@
                 </div>
                 <div class="token-value">$0.00</div>
             </div>
-            <!-- ... other token items remain unchanged ... -->
+            <div class="token-item">
+                <img src="images/damn.png" alt="DAMN">
+                <div class="token-info">
+                    <div class="token-symbol">DAMN</div>
+                    <div class="token-balance">0 DAMN</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
+            <div class="token-item">
+                <img src="images/feed.png" alt="FEED">
+                <div class="token-info">
+                    <div class="token-symbol">FEED</div>
+                    <div class="token-balance">0 FEED</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
+            <div class="token-item">
+                <img src="images/wow.png" alt="WOW">
+                <div class="token-info">
+                    <div class="token-symbol">WOW</div>
+                    <div class="token-balance">0 WOW</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
+            <div class="token-item">
+                <img src="images/shipa.png" alt="SHIPA">
+                <div class="token-info">
+                    <div class="token-symbol">SHIPA</div>
+                    <div class="token-balance">0 SHIPA</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
+            <div class="token-item">
+                <img src="images/chika.png" alt="CHIKA">
+                <div class="token-info">
+                    <div class="token-symbol">CHIKA</div>
+                    <div class="token-balance">0 CHIKA</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
+            <div class="token-item">
+                <img src="images/woof.png" alt="WOOF">
+                <div class="token-info">
+                    <div class="token-symbol">WOOF</div>
+                    <div class="token-balance">0 WOOF</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
+            <div class="token-item">
+                <img src="images/pika.png" alt="PIKA">
+                <div class="token-info">
+                    <div class="token-symbol">PIKA</div>
+                    <div class="token-balance">0 PIKA</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
+            <div class="token-item">
+                <img src="images/luisa.png" alt="LUISA">
+                <div class="token-info">
+                    <div class="token-symbol">LUISA</div>
+                    <div class="token-balance">0 LUISA</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
+            <div class="token-item">
+                <img src="images/shibs.png" alt="SHIBS">
+                <div class="token-info">
+                    <div class="token-symbol">SHIBS</div>
+                    <div class="token-balance">0 SHIBS</div>
+                </div>
+                <div class="token-value">$0.00</div>
+            </div>
         </div>
     </div>
 
@@ -158,9 +228,10 @@
             const woofChatContract = new web3.eth.Contract(WOOFCHAT_ABI, WOOFCHAT_ADDRESS);
             try {
                 const nickname = await woofChatContract.methods.getNickname(accounts[0]).call();
+                console.log("Nickname fetched:", nickname || "Not set");
                 document.getElementById('userNickname').innerText = nickname || accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
             } catch (error) {
-                console.error("Error fetching nickname:", error);
+                console.error("Error fetching nickname:", error.message);
                 document.getElementById('userNickname').innerText = accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
             }
 
@@ -169,36 +240,51 @@
             try {
                 const [joined, paidBone, isNode] = await noneContract.methods.getUserStatus(accounts[0]).call();
                 const [referralCount] = await noneContract.methods.getReferralInfo(accounts[0]).call();
+                console.log("User Status:", { joined, paidBone, isNode });
+                console.log("Referral Count:", referralCount);
                 const vIcon = document.getElementById('vIcon');
-                if (isNode) {
-                    vIcon.src = "images/300.png"; // Gold V for nodes
+                if (isNode === true || isNode === "true") {
+                    console.log("Setting Gold V (node)");
+                    vIcon.src = "images/300.png";
                     vIcon.style.display = "inline";
                 } else if (parseInt(referralCount) >= 10) {
-                    vIcon.src = "images/200.png"; // Orange V for 10+ referrals
+                    console.log("Setting Orange V (referrals >= 10)");
+                    vIcon.src = "images/200.png";
                     vIcon.style.display = "inline";
-                } else if (paidBone) {
-                    vIcon.src = "images/100.png"; // Blue V for 10 BONE paid
+                } else if (paidBone === true || paidBone === "true") {
+                    console.log("Setting Blue V (paid BONE)");
+                    vIcon.src = "images/100.png";
                     vIcon.style.display = "inline";
                 } else {
+                    console.log("No V icon applicable");
                     vIcon.style.display = "none";
                 }
             } catch (error) {
-                console.error("Error fetching verification status:", error);
+                console.error("Error fetching verification status:", error.message);
                 document.getElementById('vIcon').style.display = "none";
             }
 
-            // Fetch avatar from PunkPet (77 types, 1.png to 77.png)
+            // Fetch avatar from PunkPet
             const punkPetContract = new web3.eth.Contract(PUNKPET_ABI, PUNKPET_ADDRESS);
             try {
                 const [petIds, petTypes] = await punkPetContract.methods.getUserPets(accounts[0]).call();
-                if (petTypes.length > 0) {
+                console.log("Pet Types fetched:", petTypes);
+                const vIcon = document.getElementById('vIcon');
+                if (petTypes && petTypes.length > 0) {
                     const maxPetType = Math.max(...petTypes.map(t => parseInt(t)));
-                    document.getElementById('userAvatar').src = `images/${maxPetType}.png`;
+                    console.log("Max Pet Type:", maxPetType);
+                    if (maxPetType >= 1 && maxPetType <= 77) {
+                        document.getElementById('userAvatar').src = `images/${maxPetType}.png`;
+                    } else {
+                        console.warn("Invalid pet type:", maxPetType);
+                        document.getElementById('userAvatar').src = "images/default-avatar.png";
+                    }
                 } else {
+                    console.log("No pets found");
                     document.getElementById('userAvatar').src = "images/default-avatar.png";
                 }
             } catch (error) {
-                console.error("Error fetching avatar:", error);
+                console.error("Error fetching avatar:", error.message);
                 document.getElementById('userAvatar').src = "images/default-avatar.png";
             }
         }
@@ -217,26 +303,31 @@
                     balance = web3.utils.fromWei(balanceWei, 'ether');
                 } else {
                     const tokenContract = new web3.eth.Contract(erc20ABI, token.address);
-                    const balanceWei = await tokenContract.methods.balanceOf(accounts[0]).call();
-                    balance = web3.utils.fromWei(balanceWei, 'ether');
+                    try {
+                        const balanceWei = await tokenContract.methods.balanceOf(accounts[0]).call();
+                        balance = web3.utils.fromWei(balanceWei, 'ether');
+                    } catch (error) {
+                        console.error(`Error fetching balance for ${token.symbol}:`, error.message);
+                        balance = "0";
+                    }
                 }
 
                 if (token.symbol === "BONE") {
                     try {
                         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bone-shibaswap&vs_currencies=usd');
                         const data = await response.json();
-                        price = data['bone-shibaswap'].usd || 0;
+                        price = data['bone-shibaswap']?.usd || 0;
                     } catch (error) {
-                        console.error(`Failed to fetch price for ${token.symbol}:`, error);
+                        console.error(`Failed to fetch price for ${token.symbol} from CoinGecko:`, error);
                         price = 0;
                     }
                 } else {
                     try {
                         const response = await fetch(`https://api.geckoterminal.com/api/v2/networks/shibarium/tokens/${token.address}`);
                         const data = await response.json();
-                        price = parseFloat(data.data.attributes.price_usd) || 0;
+                        price = parseFloat(data.data?.attributes?.price_usd) || 0;
                     } catch (error) {
-                        console.error(`Failed to fetch price for ${token.symbol}:`, error);
+                        console.error(`Failed to fetch price for ${token.symbol} from GeckoTerminal:`, error);
                         price = 0;
                     }
                 }
