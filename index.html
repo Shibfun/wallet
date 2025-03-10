@@ -8,10 +8,11 @@
     <style>
         body { font-family: 'Arial', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         .container { background: #fff; padding: 15px; width: 90%; max-width: 500px; text-align: center; margin: 10px auto; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); border-radius: 15px; }
-        .search-section { margin-bottom: 10px; }
-        .search-input { width: 70%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; }
-        .search-btn { padding: 8px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-        .search-btn:hover { background: #0056b3; }
+        .search-section { margin-bottom: 10px; display: flex; justify-content: center; align-items: center; }
+        .search-input { width: 60%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; }
+        .search-btn, .back-btn { padding: 8px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .search-btn:hover, .back-btn:hover { background: #0056b3; }
+        .back-btn:disabled { background: #ccc; cursor: not-allowed; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
         .network { display: flex; align-items: center; font-size: 1em; font-weight: bold; color: #333; }
         .network img { width: 20px; height: 20px; margin-right: 5px; }
@@ -35,7 +36,7 @@
         .status { margin-top: 10px; font-size: 0.9em; color: #666; }
         @media (max-width: 600px) {
             .container { width: 100%; margin: 0; padding: 10px; border-radius: 0; box-shadow: none; }
-            .search-input { width: 60%; }
+            .search-input { width: 50%; }
             .balance { font-size: 1.8em; margin: 10px 0; }
             .avatar { width: 20px; height: 20px; }
             .nickname { font-size: 0.9em; }
@@ -52,6 +53,7 @@
         <div class="search-section">
             <input type="text" class="search-input" id="searchAddress" placeholder="Enter wallet address" pattern="^0x[a-fA-F0-9]{40}$" title="Please enter a valid Ethereum address (e.g., 0x123...)">
             <button class="search-btn" id="searchButton">Search</button>
+            <button class="back-btn" id="backButton" disabled>Back to My Wallet</button>
         </div>
         <div class="header">
             <div class="network">
@@ -157,6 +159,7 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
     <script>
         let web3, accounts;
+        let currentAddress = null; // Track the currently displayed address
         const shibarium = { chainId: 109, chainName: 'Shibarium', nativeCurrency: { name: 'BONE', symbol: 'BONE', decimals: 18 }, rpcUrls: ['https://rpc.shibrpc.com'], blockExplorerUrls: ['https://shibariumscan.io'] };
 
         const WOOFCHAT_ADDRESS = "0xf34614AaBF9F83cF484c7CA29F6C76AD2be6c00B";
@@ -251,6 +254,9 @@
                 status.innerText = "Connected to Shibarium";
                 document.getElementById('connectSection').style.display = 'none';
 
+                // Enable the Back button once wallet is connected
+                document.getElementById('backButton').disabled = false;
+
                 // Test image loading for a few sample images
                 const defaultAvatarLoaded = await testImageLoad("images/default-avatar.png");
                 console.log("Default avatar loaded:", defaultAvatarLoaded);
@@ -262,6 +268,7 @@
                 console.log("Sample V icon (100.png) loaded:", sampleVIconLoaded);
 
                 await updateUserInfo(accounts[0]); // Update with connected account
+                currentAddress = accounts[0]; // Set initial address
                 await updateTokenList();
             } catch (error) {
                 console.error("Connection error:", error.message);
@@ -273,6 +280,10 @@
 
         async function updateUserInfo(address = accounts?.[0]) {
             if (!web3 || !address) return;
+
+            // Update currentAddress to track the displayed address
+            currentAddress = address;
+            console.log(`Current displayed address: ${currentAddress}`);
 
             // Fetch nickname from WoofChat
             const woofChatContract = new web3.eth.Contract(WOOFCHAT_ABI, WOOFCHAT_ADDRESS);
@@ -437,6 +448,10 @@
             if (web3.utils.isAddress(searchAddress)) {
                 await updateUserInfo(searchAddress);
                 console.log(`Searching for address: ${searchAddress}`);
+                // Enable Back button if the searched address is different from the connected wallet
+                if (accounts && accounts[0] && searchAddress.toLowerCase() !== accounts[0].toLowerCase()) {
+                    document.getElementById('backButton').disabled = false;
+                }
             } else {
                 alert("Please enter a valid Ethereum address (e.g., 0x123...)");
                 console.error("Invalid address entered:", searchAddress);
@@ -449,10 +464,27 @@
                 if (web3.utils.isAddress(searchAddress)) {
                     await updateUserInfo(searchAddress);
                     console.log(`Searching for address: ${searchAddress}`);
+                    // Enable Back button if the searched address is different from the connected wallet
+                    if (accounts && accounts[0] && searchAddress.toLowerCase() !== accounts[0].toLowerCase()) {
+                        document.getElementById('backButton').disabled = false;
+                    }
                 } else {
                     alert("Please enter a valid Ethereum address (e.g., 0x123...)");
                     console.error("Invalid address entered:", searchAddress);
                 }
+            }
+        });
+
+        // Back button functionality
+        document.getElementById('backButton').addEventListener('click', async () => {
+            if (accounts && accounts[0]) {
+                await updateUserInfo(accounts[0]);
+                console.log(`Returning to connected wallet: ${accounts[0]}`);
+                document.getElementById('searchAddress').value = ''; // Clear the search input
+                document.getElementById('backButton').disabled = true; // Disable Back button after returning
+            } else {
+                console.log("No wallet connected to return to");
+                alert("Please connect your wallet first.");
             }
         });
 
@@ -462,6 +494,7 @@
                 document.getElementById('connectButton').textContent = 'Connect MetaMask';
                 web3 = null;
                 accounts = null;
+                document.getElementById('backButton').disabled = true;
             } else {
                 connectWallet();
             }
@@ -475,6 +508,7 @@
                 document.getElementById('connectButton').textContent = 'Connect MetaMask';
                 web3 = null;
                 accounts = null;
+                document.getElementById('backButton').disabled = true;
             }
         });
 
