@@ -10,7 +10,7 @@
         .container { background: #fff; padding: 15px; width: 90%; max-width: 500px; text-align: center; margin: 10px auto; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); border-radius: 15px; }
         .search-section { margin-bottom: 10px; display: flex; justify-content: center; align-items: center; }
         .search-input { width: 60%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; }
-        .search-btn, .back-btn { padding: 8px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .search-btn, .back-btn { padding: 8px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; font-size: 14px; min-width: 60px; text-align: center; }
         .search-btn:hover, .back-btn:hover { background: #0056b3; }
         .back-btn:disabled { background: #ccc; cursor: not-allowed; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
@@ -37,6 +37,7 @@
         @media (max-width: 600px) {
             .container { width: 100%; margin: 0; padding: 10px; border-radius: 0; box-shadow: none; }
             .search-input { width: 50%; }
+            .search-btn, .back-btn { padding: 6px 12px; font-size: 12px; min-width: 50px; }
             .balance { font-size: 1.8em; margin: 10px 0; }
             .avatar { width: 20px; height: 20px; }
             .nickname { font-size: 0.9em; }
@@ -268,8 +269,8 @@
                 console.log("Sample V icon (100.png) loaded:", sampleVIconLoaded);
 
                 await updateUserInfo(accounts[0]); // Update with connected account
+                await updateTokenList(accounts[0]); // Update token list for connected account
                 currentAddress = accounts[0]; // Set initial address
-                await updateTokenList();
             } catch (error) {
                 console.error("Connection error:", error.message);
                 status.innerText = "Failed: " + error.message;
@@ -395,8 +396,18 @@
             }
         }
 
-        async function updateTokenList() {
-            if (!web3 || !accounts) return;
+        async function updateTokenList(address) {
+            if (!web3 || !address) {
+                // Reset token list if no address is provided
+                const tokenItems = document.getElementsByClassName('token-item');
+                for (let i = 0; i < tokens.length; i++) {
+                    tokenItems[i].querySelector('.token-balance').innerText = `0 ${tokens[i].symbol}`;
+                    tokenItems[i].querySelector('.token-value').innerText = "$0.00";
+                }
+                document.getElementById('totalBalance').innerText = "$0.00 USD";
+                return;
+            }
+
             const tokenList = document.getElementById('tokenList');
             let totalUSD = 0;
             const tokenItems = tokenList.getElementsByClassName('token-item');
@@ -406,15 +417,15 @@
 
                 try {
                     if (token.address === "0x0000000000000000000000000000000000000000") {
-                        const balanceWei = await web3.eth.getBalance(accounts[0]);
+                        const balanceWei = await web3.eth.getBalance(address);
                         balance = web3.utils.fromWei(balanceWei, 'ether');
                     } else {
                         const tokenContract = new web3.eth.Contract(erc20ABI, token.address);
-                        const balanceWei = await tokenContract.methods.balanceOf(accounts[0]).call();
+                        const balanceWei = await tokenContract.methods.balanceOf(address).call();
                         balance = web3.utils.fromWei(balanceWei, 'ether');
                     }
                 } catch (error) {
-                    console.error(`Error fetching balance for ${token.symbol}:`, error.message);
+                    console.error(`Error fetching balance for ${token.symbol} for address ${address}:`, error.message);
                     balance = "0";
                 }
 
@@ -429,7 +440,7 @@
                         price = parseFloat(data.data?.attributes?.price_usd) || 0;
                     }
                 } catch (error) {
-                    console.error(`Failed to fetch price for ${token.symbol}:`, error.message);
+                    console.error(`Failed to fetch price for ${token.symbol} for address ${address}:`, error.message);
                     price = 0;
                 }
 
@@ -447,6 +458,7 @@
             const searchAddress = document.getElementById('searchAddress').value.trim();
             if (web3.utils.isAddress(searchAddress)) {
                 await updateUserInfo(searchAddress);
+                await updateTokenList(searchAddress); // Update token list for searched address
                 console.log(`Searching for address: ${searchAddress}`);
                 // Enable Back button if the searched address is different from the connected wallet
                 if (accounts && accounts[0] && searchAddress.toLowerCase() !== accounts[0].toLowerCase()) {
@@ -463,6 +475,7 @@
                 const searchAddress = document.getElementById('searchAddress').value.trim();
                 if (web3.utils.isAddress(searchAddress)) {
                     await updateUserInfo(searchAddress);
+                    await updateTokenList(searchAddress); // Update token list for searched address
                     console.log(`Searching for address: ${searchAddress}`);
                     // Enable Back button if the searched address is different from the connected wallet
                     if (accounts && accounts[0] && searchAddress.toLowerCase() !== accounts[0].toLowerCase()) {
@@ -479,6 +492,7 @@
         document.getElementById('backButton').addEventListener('click', async () => {
             if (accounts && accounts[0]) {
                 await updateUserInfo(accounts[0]);
+                await updateTokenList(accounts[0]); // Update token list for connected wallet
                 console.log(`Returning to connected wallet: ${accounts[0]}`);
                 document.getElementById('searchAddress').value = ''; // Clear the search input
                 document.getElementById('backButton').disabled = true; // Disable Back button after returning
@@ -509,6 +523,8 @@
                 web3 = null;
                 accounts = null;
                 document.getElementById('backButton').disabled = true;
+                // Reset token list if wallet is disconnected
+                updateTokenList(null);
             }
         });
 
