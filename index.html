@@ -10,13 +10,12 @@
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
         .network { display: flex; align-items: center; font-size: 1em; font-weight: bold; color: #333; }
         .network img { width: 20px; height: 20px; margin-right: 5px; }
-        .user-info { display: flex; align-items: center; }
-        .avatar { width: 30px; height: 30px; border-radius: 50%; margin-right: 8px; }
-        .nickname { font-size: 0.9em; font-weight: bold; color: #333; margin-right: 5px; }
+        .profile-section { display: flex; align-items: center; justify-content: center; padding: 10px 0; }
+        .avatar { width: 24px; height: 24px; border-radius: 50%; margin-right: 8px; }
+        .nickname { font-size: 1em; font-weight: bold; color: #333; margin-right: 5px; }
         .v-icon { width: 16px; height: 16px; vertical-align: middle; }
-        .address { font-size: 0.8em; color: #666; margin-top: 5px; }
-        .balance { font-size: 2.5em; font-weight: bold; margin: 15px 0 10px; }
-        .balance-change { font-size: 0.9em; color: #666; }
+        .balance { font-size: 2.5em; font-weight: bold; margin: 10px 0; }
+        .balance-change { font-size: 0.9em; color: #666; margin-bottom: 10px; }
         .token-list { margin-top: 15px; }
         .token-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; min-height: 48px; }
         .token-item img { width: 20px; height: 20px; margin-right: 10px; }
@@ -32,10 +31,9 @@
         @media (max-width: 600px) {
             .container { width: 100%; margin: 0; padding: 10px; border-radius: 0; box-shadow: none; }
             .balance { font-size: 1.8em; margin: 10px 0; }
-            .avatar { width: 25px; height: 25px; }
-            .nickname { font-size: 0.8em; }
+            .avatar { width: 20px; height: 20px; }
+            .nickname { font-size: 0.9em; }
             .v-icon { width: 14px; height: 14px; }
-            .address { font-size: 0.7em; }
             .token-item { padding: 10px; }
             .connect-btn { padding: 10px; font-size: 0.9em; }
             .status { font-size: 0.8em; }
@@ -49,13 +47,14 @@
             <div class="network">
                 <img src="images/shibarium.png" alt="Shibarium"> Shibarium
             </div>
-            <div class="user-info">
-                <img class="avatar" id="userAvatar" src="images/default-avatar.png" alt="Avatar">
-                <span class="nickname" id="userNickname">Woof Wallet</span>
-                <img class="v-icon" id="vIcon" src="" alt="" style="display: none;">
-            </div>
+            <!-- Removed user-info from header -->
+            <div style="width: 24px;"></div> <!-- Placeholder to balance the layout -->
         </div>
-        <div class="address" id="walletAddress"></div>
+        <div class="profile-section">
+            <img class="avatar" id="userAvatar" src="images/default-avatar.png" alt="Avatar">
+            <span class="nickname" id="userNickname">Woof Wallet</span>
+            <img class="v-icon" id="vIcon" src="" alt="" style="display: none;">
+        </div>
         <div class="balance" id="totalBalance">$0.00 USD</div>
         <div class="balance-change">+USD$0.00 (0.00%)</div>
         <div class="connect-section" id="connectSection">
@@ -142,7 +141,6 @@
                 connectButton.textContent = `Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`;
                 status.innerText = "Connected to Shibarium";
                 document.getElementById('connectSection').style.display = 'none';
-                document.getElementById('walletAddress').innerText = accounts[0];
                 await updateUserInfo();
                 await updateTokenList();
             } catch (error) {
@@ -156,6 +154,7 @@
         async function updateUserInfo() {
             if (!web3 || !accounts) return;
 
+            // Fetch nickname from WoofChat
             const woofChatContract = new web3.eth.Contract(WOOFCHAT_ABI, WOOFCHAT_ADDRESS);
             try {
                 const nickname = await woofChatContract.methods.getNickname(accounts[0]).call();
@@ -165,6 +164,7 @@
                 document.getElementById('userNickname').innerText = accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
             }
 
+            // Fetch verification status from None
             const noneContract = new web3.eth.Contract(NONE_ABI, NONE_ADDRESS);
             try {
                 const [joined, paidBone, isNode] = await noneContract.methods.getUserStatus(accounts[0]).call();
@@ -187,6 +187,7 @@
                 document.getElementById('vIcon').style.display = "none";
             }
 
+            // Fetch avatar from PunkPet (77 types, 1.png to 77.png)
             const punkPetContract = new web3.eth.Contract(PUNKPET_ABI, PUNKPET_ADDRESS);
             try {
                 const [petIds, petTypes] = await punkPetContract.methods.getUserPets(accounts[0]).call();
