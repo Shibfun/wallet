@@ -8,6 +8,10 @@
     <style>
         body { font-family: 'Arial', sans-serif; background: #f5f5f5; color: #333; margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         .container { background: #fff; padding: 15px; width: 90%; max-width: 500px; text-align: center; margin: 10px auto; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); border-radius: 15px; }
+        .search-section { margin-bottom: 10px; }
+        .search-input { width: 70%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; }
+        .search-btn { padding: 8px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        .search-btn:hover { background: #0056b3; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
         .network { display: flex; align-items: center; font-size: 1em; font-weight: bold; color: #333; }
         .network img { width: 20px; height: 20px; margin-right: 5px; }
@@ -31,6 +35,7 @@
         .status { margin-top: 10px; font-size: 0.9em; color: #666; }
         @media (max-width: 600px) {
             .container { width: 100%; margin: 0; padding: 10px; border-radius: 0; box-shadow: none; }
+            .search-input { width: 60%; }
             .balance { font-size: 1.8em; margin: 10px 0; }
             .avatar { width: 20px; height: 20px; }
             .nickname { font-size: 0.9em; }
@@ -44,6 +49,10 @@
 </head>
 <body>
     <div class="container">
+        <div class="search-section">
+            <input type="text" class="search-input" id="searchAddress" placeholder="Enter wallet address" pattern="^0x[a-fA-F0-9]{40}$" title="Please enter a valid Ethereum address (e.g., 0x123...)">
+            <button class="search-btn" id="searchButton">Search</button>
+        </div>
         <div class="header">
             <div class="network">
                 <img src="images/shibarium.png" alt="Shibarium"> Shibarium
@@ -252,7 +261,7 @@
                 const sampleVIconLoaded = await testImageLoad("images/100.png");
                 console.log("Sample V icon (100.png) loaded:", sampleVIconLoaded);
 
-                await updateUserInfo();
+                await updateUserInfo(accounts[0]); // Update with connected account
                 await updateTokenList();
             } catch (error) {
                 console.error("Connection error:", error.message);
@@ -262,59 +271,59 @@
             }
         }
 
-        async function updateUserInfo() {
-            if (!web3 || !accounts) return;
+        async function updateUserInfo(address = accounts?.[0]) {
+            if (!web3 || !address) return;
 
             // Fetch nickname from WoofChat
             const woofChatContract = new web3.eth.Contract(WOOFCHAT_ABI, WOOFCHAT_ADDRESS);
             try {
-                const nickname = await woofChatContract.methods.getNickname(accounts[0]).call();
-                console.log("Nickname fetched:", nickname || "Not set");
-                document.getElementById('userNickname').innerText = nickname || accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
+                const nickname = await woofChatContract.methods.getNickname(address).call();
+                console.log(`Nickname fetched for ${address}:`, nickname || "Not set");
+                document.getElementById('userNickname').innerText = nickname || address.slice(0, 6) + "..." + address.slice(-4);
             } catch (error) {
-                console.error("Error fetching nickname from WoofChat:", error.message);
-                document.getElementById('userNickname').innerText = accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
+                console.error(`Error fetching nickname for ${address} from WoofChat:`, error.message);
+                document.getElementById('userNickname').innerText = address.slice(0, 6) + "..." + address.slice(-4);
             }
 
-            // Fetch verification status from None (unchanged)
+            // Fetch verification status from None
             const noneContract = new web3.eth.Contract(NONE_ABI, NONE_ADDRESS);
             try {
-                const userStatus = await noneContract.methods.getUserStatus(accounts[0]).call();
-                const referralInfo = await noneContract.methods.getReferralInfo(accounts[0]).call();
+                const userStatus = await noneContract.methods.getUserStatus(address).call();
+                const referralInfo = await noneContract.methods.getReferralInfo(address).call();
                 const joined = userStatus[0];
                 const paidBone = userStatus[1];
                 const isNode = userStatus[2];
                 const referralCount = referralInfo[0];
-                console.log("User Status from None:", { joined, paidBone, isNode });
-                console.log("Referral Count:", referralCount);
+                console.log(`User Status for ${address} from None:`, { joined, paidBone, isNode });
+                console.log(`Referral Count for ${address}:`, referralCount);
                 const vIcon = document.getElementById('vIcon');
                 let selectedVIcon = null;
                 if (isNode === true || isNode === "true") {
-                    console.log("Setting Gold V (node)");
+                    console.log(`Setting Gold V (node) for ${address}`);
                     selectedVIcon = "images/300.png";
                 } else if (parseInt(referralCount) >= 10) {
-                    console.log("Setting Orange V (referrals >= 10)");
+                    console.log(`Setting Orange V (referrals >= 10) for ${address}`);
                     selectedVIcon = "images/200.png";
                 } else if (paidBone === true || paidBone === "true") {
-                    console.log("Setting Blue V (paid BONE)");
+                    console.log(`Setting Blue V (paid BONE) for ${address}`);
                     selectedVIcon = "images/100.png";
                 } else {
-                    console.log("No V icon applicable");
+                    console.log(`No V icon applicable for ${address}`);
                     vIcon.style.display = "none";
                 }
                 if (selectedVIcon) {
                     const vIconLoaded = await testImageLoad(selectedVIcon);
-                    console.log(`V Icon (${selectedVIcon}) loaded:`, vIconLoaded);
+                    console.log(`V Icon (${selectedVIcon}) loaded for ${address}:`, vIconLoaded);
                     if (vIconLoaded) {
                         vIcon.src = selectedVIcon;
                         vIcon.style.display = "inline";
                     } else {
-                        console.error(`Failed to load V icon: ${selectedVIcon}`);
+                        console.error(`Failed to load V icon: ${selectedVIcon} for ${address}`);
                         vIcon.style.display = "none";
                     }
                 }
             } catch (error) {
-                console.error("Error fetching verification status from None:", error.message);
+                console.error(`Error fetching verification status for ${address} from None:`, error.message);
                 document.getElementById('vIcon').style.display = "none";
             }
 
@@ -322,58 +331,55 @@
             const punkPetContract = new web3.eth.Contract(PUNKPET_ABI, PUNKPET_ADDRESS);
             const userAvatar = document.getElementById('userAvatar');
             try {
-                console.log("Fetching pet data for account:", accounts[0]);
-                const result = await punkPetContract.methods.getUserPets(accounts[0]).call();
-                console.log("PunkPet Contract - Raw Result:", result);
+                console.log(`Fetching pet data for address: ${address}`);
+                const result = await punkPetContract.methods.getUserPets(address).call();
+                console.log(`PunkPet Contract - Raw Result for ${address}:`, result);
 
-                // Destructure the result array explicitly
-                const petIds = result[0]; // uint256[] petIds
-                const petTypes = result[1]; // uint256[] petTypes
-                const nextFeedTimes = result[2]; // uint256[] nextFeedTimes
-                const feedCounts = result[3]; // uint256[] feedCounts
-                console.log("PunkPet Contract - Parsed Data:", { petIds, petTypes, nextFeedTimes, feedCounts });
+                const petIds = result[0];
+                const petTypes = result[1];
+                const nextFeedTimes = result[2];
+                const feedCounts = result[3];
+                console.log(`PunkPet Contract - Parsed Data for ${address}:`, { petIds, petTypes, nextFeedTimes, feedCounts });
 
                 if (petTypes && Array.isArray(petTypes) && petTypes.length > 0) {
-                    // Convert petTypes to integers and filter valid types (1 to 77)
                     const validPetTypes = petTypes
                         .map(t => {
-                            // Handle potential string or number type
                             const num = typeof t === 'string' ? parseInt(t, 10) : Number(t);
                             return isNaN(num) ? 0 : (num >= 1 && num <= 77 ? num : 0);
                         })
                         .filter(t => t >= 1 && t <= 77);
-                    console.log("PunkPet Contract - Valid Pet Types:", validPetTypes);
+                    console.log(`PunkPet Contract - Valid Pet Types for ${address}:`, validPetTypes);
 
                     if (validPetTypes.length > 0) {
                         const maxPetType = Math.max(...validPetTypes);
-                        console.log("PunkPet Contract - Highest Pet Type:", maxPetType);
+                        console.log(`PunkPet Contract - Highest Pet Type for ${address}:`, maxPetType);
 
                         if (maxPetType >= 1 && maxPetType <= 77 && avatarImages[maxPetType]) {
                             const avatarUrl = `images/${avatarImages[maxPetType]}`;
                             const avatarLoaded = await testImageLoad(avatarUrl);
-                            console.log(`PunkPet Contract - Attempting to load avatar: ${avatarUrl}, Result: ${avatarLoaded}`);
+                            console.log(`PunkPet Contract - Attempting to load avatar: ${avatarUrl} for ${address}, Result: ${avatarLoaded}`);
 
                             if (avatarLoaded) {
                                 userAvatar.src = avatarUrl;
-                                console.log("PunkPet Contract - Avatar updated to:", avatarUrl);
+                                console.log(`PunkPet Contract - Avatar updated to: ${avatarUrl} for ${address}`);
                             } else {
-                                console.error(`PunkPet Contract - Failed to load avatar: ${avatarUrl}, falling back to default`);
+                                console.error(`PunkPet Contract - Failed to load avatar: ${avatarUrl} for ${address}, falling back to default`);
                                 userAvatar.src = "images/default-avatar.png";
                             }
                         } else {
-                            console.warn("PunkPet Contract - Max pet type invalid, using default avatar");
+                            console.warn(`PunkPet Contract - Max pet type invalid for ${address}, using default avatar`);
                             userAvatar.src = "images/default-avatar.png";
                         }
                     } else {
-                        console.warn("PunkPet Contract - No valid pet types found, using default avatar");
+                        console.warn(`PunkPet Contract - No valid pet types found for ${address}, using default avatar`);
                         userAvatar.src = "images/default-avatar.png";
                     }
                 } else {
-                    console.log("PunkPet Contract - No pets found or petTypes invalid, using default avatar");
+                    console.log(`PunkPet Contract - No pets found or petTypes invalid for ${address}, using default avatar`);
                     userAvatar.src = "images/default-avatar.png";
                 }
             } catch (error) {
-                console.error("PunkPet Contract - Error fetching pet data:", error.message);
+                console.error(`PunkPet Contract - Error fetching pet data for ${address}:`, error.message);
                 userAvatar.src = "images/default-avatar.png";
             }
         }
@@ -424,6 +430,31 @@
             }
             document.getElementById('totalBalance').innerText = `$${totalUSD.toFixed(2)} USD`;
         }
+
+        // Search functionality
+        document.getElementById('searchButton').addEventListener('click', async () => {
+            const searchAddress = document.getElementById('searchAddress').value.trim();
+            if (web3.utils.isAddress(searchAddress)) {
+                await updateUserInfo(searchAddress);
+                console.log(`Searching for address: ${searchAddress}`);
+            } else {
+                alert("Please enter a valid Ethereum address (e.g., 0x123...)");
+                console.error("Invalid address entered:", searchAddress);
+            }
+        });
+
+        document.getElementById('searchAddress').addEventListener('keypress', async (event) => {
+            if (event.key === 'Enter') {
+                const searchAddress = document.getElementById('searchAddress').value.trim();
+                if (web3.utils.isAddress(searchAddress)) {
+                    await updateUserInfo(searchAddress);
+                    console.log(`Searching for address: ${searchAddress}`);
+                } else {
+                    alert("Please enter a valid Ethereum address (e.g., 0x123...)");
+                    console.error("Invalid address entered:", searchAddress);
+                }
+            }
+        });
 
         window.ethereum?.on('chainChanged', (chainId) => {
             if (parseInt(chainId, 16) !== 109) {
