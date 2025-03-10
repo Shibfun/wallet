@@ -235,7 +235,7 @@
                 status.innerText = "Connected to Shibarium";
                 document.getElementById('connectSection').style.display = 'none';
 
-                // Test image loading for sample avatars
+                // Test image loading for avatars
                 const defaultAvatarLoaded = await testImageLoad("images/default-avatar.png");
                 console.log("Default avatar loaded:", defaultAvatarLoaded);
                 const sampleAvatar1Loaded = await testImageLoad("images/1.png");
@@ -256,7 +256,7 @@
         async function updateUserInfo() {
             if (!web3 || !accounts) return;
 
-            // Fetch nickname from WoofChat (unchanged for brevity)
+            // Fetch nickname from WoofChat (simplified)
             const woofChatContract = new web3.eth.Contract(WOOFCHAT_ABI, WOOFCHAT_ADDRESS);
             try {
                 const nickname = await woofChatContract.methods.getNickname(accounts[0]).call();
@@ -265,26 +265,45 @@
                 document.getElementById('userNickname').innerText = accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
             }
 
-            // Fetch verification status from None (unchanged for brevity)
+            // Fetch and update V icon from None
             const noneContract = new web3.eth.Contract(NONE_ABI, NONE_ADDRESS);
+            const vIcon = document.getElementById('vIcon');
             try {
                 const [joined, paidBone, isNode] = await noneContract.methods.getUserStatus(accounts[0]).call();
                 const [referralCount] = await noneContract.methods.getReferralInfo(accounts[0]).call();
-                const vIcon = document.getElementById('vIcon');
+                console.log("None Contract Data - Status:", { joined, paidBone, isNode });
+                console.log("None Contract Data - Referral Count:", referralCount);
+
+                let vIconPath = null;
                 if (isNode === true || isNode === "true") {
-                    vIcon.src = "images/300.png";
-                    vIcon.style.display = "inline";
+                    vIconPath = "images/300.png";
+                    console.log("Setting Gold V (node)");
                 } else if (parseInt(referralCount) >= 10) {
-                    vIcon.src = "images/200.png";
-                    vIcon.style.display = "inline";
+                    vIconPath = "images/200.png";
+                    console.log("Setting Orange V (referrals >= 10)");
                 } else if (paidBone === true || paidBone === "true") {
-                    vIcon.src = "images/100.png";
-                    vIcon.style.display = "inline";
+                    vIconPath = "images/100.png";
+                    console.log("Setting Blue V (paid BONE)");
+                } else {
+                    console.log("No V icon applicable");
+                }
+
+                if (vIconPath) {
+                    const vIconLoaded = await testImageLoad(vIconPath);
+                    console.log(`V Icon (${vIconPath}) loaded:`, vIconLoaded);
+                    if (vIconLoaded) {
+                        vIcon.src = vIconPath;
+                        vIcon.style.display = "inline";
+                    } else {
+                        console.error(`Failed to load V icon: ${vIconPath}`);
+                        vIcon.style.display = "none";
+                    }
                 } else {
                     vIcon.style.display = "none";
                 }
             } catch (error) {
-                document.getElementById('vIcon').style.display = "none";
+                console.error("Error fetching V icon from None:", error.message);
+                vIcon.style.display = "none";
             }
 
             // Fetch and update avatar from PunkPet
@@ -292,40 +311,40 @@
             const userAvatar = document.getElementById('userAvatar');
             try {
                 const [petIds, petTypes] = await punkPetContract.methods.getUserPets(accounts[0]).call();
-                console.log("Raw Pet Types from PunkPet:", petTypes);
+                console.log("PunkPet Contract - Raw Pet Types:", petTypes);
 
-                if (petTypes && petTypes.length > 0 && Array.isArray(petTypes)) {
-                    // Ensure all elements are valid numbers
+                if (petTypes && Array.isArray(petTypes) && petTypes.length > 0) {
+                    // Validate and convert petTypes to numbers
                     const validPetTypes = petTypes.map(t => {
-                        const num = parseInt(t);
-                        return isNaN(num) ? 0 : num; // Default to 0 if invalid
+                        const num = parseInt(t, 10); // Use base 10 to avoid parsing issues
+                        return isNaN(num) ? 0 : (num >= 1 && num <= 77 ? num : 0);
                     });
-                    console.log("Validated Pet Types:", validPetTypes);
+                    console.log("PunkPet Contract - Validated Pet Types:", validPetTypes);
 
-                    const maxPetType = Math.max(...validPetTypes.filter(t => t >= 1 && t <= 77));
-                    console.log("Max Pet Type:", maxPetType);
+                    const maxPetType = Math.max(...validPetTypes);
+                    console.log("PunkPet Contract - Max Pet Type:", maxPetType);
 
                     if (maxPetType >= 1 && maxPetType <= 77 && avatarImages[maxPetType]) {
                         const avatarUrl = `images/${avatarImages[maxPetType]}`;
                         const avatarLoaded = await testImageLoad(avatarUrl);
-                        console.log(`Attempting to load avatar: ${avatarUrl}, Result: ${avatarLoaded}`);
+                        console.log(`PunkPet Contract - Attempting to load avatar: ${avatarUrl}, Result: ${avatarLoaded}`);
                         if (avatarLoaded) {
                             userAvatar.src = avatarUrl;
-                            console.log("Avatar updated to:", avatarUrl);
+                            console.log("PunkPet Contract - Avatar updated to:", avatarUrl);
                         } else {
-                            console.error(`Failed to load avatar: ${avatarUrl}, falling back to default`);
+                            console.error(`PunkPet Contract - Failed to load avatar: ${avatarUrl}, falling back to default`);
                             userAvatar.src = "images/default-avatar.png";
                         }
                     } else {
-                        console.warn("No valid max pet type found (out of 1-77 range), using default");
+                        console.warn("PunkPet Contract - No valid max pet type found, using default");
                         userAvatar.src = "images/default-avatar.png";
                     }
                 } else {
-                    console.log("No pets found or petTypes is not an array:", petTypes);
+                    console.log("PunkPet Contract - No pets found or petTypes is invalid:", petTypes);
                     userAvatar.src = "images/default-avatar.png";
                 }
             } catch (error) {
-                console.error("Error fetching avatar from PunkPet:", error.message);
+                console.error("PunkPet Contract - Error fetching avatar:", error.message);
                 userAvatar.src = "images/default-avatar.png";
             }
         }
