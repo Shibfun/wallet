@@ -249,6 +249,8 @@
                 console.log("Sample avatar (1.png) loaded:", sampleAvatar1Loaded);
                 const sampleAvatar77Loaded = await testImageLoad("images/77.png");
                 console.log("Sample avatar (77.png) loaded:", sampleAvatar77Loaded);
+                const sampleVIconLoaded = await testImageLoad("images/100.png");
+                console.log("Sample V icon (100.png) loaded:", sampleVIconLoaded);
 
                 await updateUserInfo();
                 await updateTokenList();
@@ -316,35 +318,50 @@
                 document.getElementById('vIcon').style.display = "none";
             }
 
-            // Fetch and update avatar from PunkPet with enhanced debugging
+            // Fetch and update avatar from PunkPet
             const punkPetContract = new web3.eth.Contract(PUNKPET_ABI, PUNKPET_ADDRESS);
             const userAvatar = document.getElementById('userAvatar');
             try {
-                console.log("Attempting to fetch pet data for account:", accounts[0]);
-                const [petIds, petTypes, nextFeedTimes, feedCounts] = await punkPetContract.methods.getUserPets(accounts[0]).call();
-                console.log("PunkPet Contract - Raw Data:", { petIds, petTypes, nextFeedTimes, feedCounts });
+                console.log("Fetching pet data for account:", accounts[0]);
+                const result = await punkPetContract.methods.getUserPets(accounts[0]).call();
+                console.log("PunkPet Contract - Raw Result:", result);
+
+                // Destructure the result array explicitly
+                const petIds = result[0]; // uint256[] petIds
+                const petTypes = result[1]; // uint256[] petTypes
+                const nextFeedTimes = result[2]; // uint256[] nextFeedTimes
+                const feedCounts = result[3]; // uint256[] feedCounts
+                console.log("PunkPet Contract - Parsed Data:", { petIds, petTypes, nextFeedTimes, feedCounts });
 
                 if (petTypes && Array.isArray(petTypes) && petTypes.length > 0) {
-                    // Validate and convert petTypes to integers
-                    const validPetTypes = petTypes.map(t => {
-                        const num = parseInt(t, 10); // Base 10 parsing
-                        return isNaN(num) ? 0 : (num >= 1 && num <= 77 ? num : 0);
-                    }).filter(t => t >= 1 && t <= 77); // Keep only valid types
-                    console.log("PunkPet Contract - Validated Pet Types:", validPetTypes);
+                    // Convert petTypes to integers and filter valid types (1 to 77)
+                    const validPetTypes = petTypes
+                        .map(t => {
+                            // Handle potential string or number type
+                            const num = typeof t === 'string' ? parseInt(t, 10) : Number(t);
+                            return isNaN(num) ? 0 : (num >= 1 && num <= 77 ? num : 0);
+                        })
+                        .filter(t => t >= 1 && t <= 77);
+                    console.log("PunkPet Contract - Valid Pet Types:", validPetTypes);
 
                     if (validPetTypes.length > 0) {
                         const maxPetType = Math.max(...validPetTypes);
                         console.log("PunkPet Contract - Highest Pet Type:", maxPetType);
 
-                        const avatarUrl = `images/${avatarImages[maxPetType]}`;
-                        const avatarLoaded = await testImageLoad(avatarUrl);
-                        console.log(`PunkPet Contract - Attempting to load avatar: ${avatarUrl}, Result: ${avatarLoaded}`);
+                        if (maxPetType >= 1 && maxPetType <= 77 && avatarImages[maxPetType]) {
+                            const avatarUrl = `images/${avatarImages[maxPetType]}`;
+                            const avatarLoaded = await testImageLoad(avatarUrl);
+                            console.log(`PunkPet Contract - Attempting to load avatar: ${avatarUrl}, Result: ${avatarLoaded}`);
 
-                        if (avatarLoaded) {
-                            userAvatar.src = avatarUrl;
-                            console.log("PunkPet Contract - Avatar updated to:", avatarUrl);
+                            if (avatarLoaded) {
+                                userAvatar.src = avatarUrl;
+                                console.log("PunkPet Contract - Avatar updated to:", avatarUrl);
+                            } else {
+                                console.error(`PunkPet Contract - Failed to load avatar: ${avatarUrl}, falling back to default`);
+                                userAvatar.src = "images/default-avatar.png";
+                            }
                         } else {
-                            console.error(`PunkPet Contract - Failed to load avatar: ${avatarUrl}, falling back to default`);
+                            console.warn("PunkPet Contract - Max pet type invalid, using default avatar");
                             userAvatar.src = "images/default-avatar.png";
                         }
                     } else {
@@ -352,7 +369,7 @@
                         userAvatar.src = "images/default-avatar.png";
                     }
                 } else {
-                    console.log("PunkPet Contract - No pets found or petTypes is invalid, using default avatar");
+                    console.log("PunkPet Contract - No pets found or petTypes invalid, using default avatar");
                     userAvatar.src = "images/default-avatar.png";
                 }
             } catch (error) {
@@ -436,7 +453,6 @@
             } else if (!window.ethereum) {
                 document.getElementById('networkStatus').innerHTML = 'No wallet detected. Please install <a href="https://metamask.io" target="_blank">MetaMask</a>.';
             }
-            // Default avatar is already set in HTML, no action needed here
         });
 
         document.getElementById('connectButton').addEventListener('click', connectWallet);
