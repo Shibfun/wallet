@@ -186,6 +186,16 @@
             "71.png", "72.png", "73.png", "74.png", "75.png", "76.png", "77.png"
         ];
 
+        // Function to test image loading
+        function testImageLoad(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(true);
+                img.onerror = () => resolve(false);
+                img.src = url;
+            });
+        }
+
         function formatPrice(price) {
             const num = parseFloat(price);
             if (isNaN(num) || num === 0) return "$0.00";
@@ -193,16 +203,6 @@
             if (num >= 0.01) return "$" + num.toFixed(4);
             if (num >= 0.0001) return "$" + num.toFixed(6);
             return "$" + num.toFixed(8);
-        }
-
-        // Function to test image loading
-        async function testImageLoad(url) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => resolve(true);
-                img.onerror = () => resolve(false);
-                img.src = url;
-            });
         }
 
         async function connectWallet() {
@@ -234,15 +234,6 @@
                 connectButton.textContent = `Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`;
                 status.innerText = "Connected to Shibarium";
                 document.getElementById('connectSection').style.display = 'none';
-
-                // Test image loading for a few sample images
-                const defaultAvatarLoaded = await testImageLoad("images/default-avatar.png");
-                console.log("Default avatar loaded:", defaultAvatarLoaded);
-                const sampleAvatarLoaded = await testImageLoad("images/1.png");
-                console.log("Sample avatar (1.png) loaded:", sampleAvatarLoaded);
-                const sampleVIconLoaded = await testImageLoad("images/100.png");
-                console.log("Sample V icon (100.png) loaded:", sampleVIconLoaded);
-
                 await updateUserInfo();
                 await updateTokenList();
             } catch (error) {
@@ -256,84 +247,64 @@
         async function updateUserInfo() {
             if (!web3 || !accounts) return;
 
-            // Fetch nickname from WoofChat
+            // Fetch nickname from WoofChat (unchanged)
             const woofChatContract = new web3.eth.Contract(WOOFCHAT_ABI, WOOFCHAT_ADDRESS);
             try {
                 const nickname = await woofChatContract.methods.getNickname(accounts[0]).call();
-                console.log("Nickname fetched:", nickname || "Not set");
                 document.getElementById('userNickname').innerText = nickname || accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
             } catch (error) {
                 console.error("Error fetching nickname from WoofChat:", error.message);
                 document.getElementById('userNickname').innerText = accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
             }
 
-            // Fetch verification status from None
+            // Fetch verification status from None (unchanged)
             const noneContract = new web3.eth.Contract(NONE_ABI, NONE_ADDRESS);
             try {
-                const userStatus = await noneContract.methods.getUserStatus(accounts[0]).call();
-                const referralInfo = await noneContract.methods.getReferralInfo(accounts[0]).call();
-                const joined = userStatus[0];
-                const paidBone = userStatus[1];
-                const isNode = userStatus[2];
-                const referralCount = referralInfo[0];
-                console.log("User Status from None:", { joined, paidBone, isNode });
-                console.log("Referral Count:", referralCount);
+                const [joined, paidBone, isNode] = await noneContract.methods.getUserStatus(accounts[0]).call();
+                const [referralCount] = await noneContract.methods.getReferralInfo(accounts[0]).call();
                 const vIcon = document.getElementById('vIcon');
-                let selectedVIcon = null;
                 if (isNode === true || isNode === "true") {
-                    console.log("Setting Gold V (node)");
-                    selectedVIcon = "images/300.png";
+                    vIcon.src = "images/300.png";
+                    vIcon.style.display = "inline";
                 } else if (parseInt(referralCount) >= 10) {
-                    console.log("Setting Orange V (referrals >= 10)");
-                    selectedVIcon = "images/200.png";
+                    vIcon.src = "images/200.png";
+                    vIcon.style.display = "inline";
                 } else if (paidBone === true || paidBone === "true") {
-                    console.log("Setting Blue V (paid BONE)");
-                    selectedVIcon = "images/100.png";
+                    vIcon.src = "images/100.png";
+                    vIcon.style.display = "inline";
                 } else {
-                    console.log("No V icon applicable");
                     vIcon.style.display = "none";
-                }
-                if (selectedVIcon) {
-                    const vIconLoaded = await testImageLoad(selectedVIcon);
-                    console.log(`V Icon (${selectedVIcon}) loaded:`, vIconLoaded);
-                    if (vIconLoaded) {
-                        vIcon.src = selectedVIcon;
-                        vIcon.style.display = "inline";
-                    } else {
-                        console.error(`Failed to load V icon: ${selectedVIcon}`);
-                        vIcon.style.display = "none";
-                    }
                 }
             } catch (error) {
                 console.error("Error fetching verification status from None:", error.message);
                 document.getElementById('vIcon').style.display = "none";
             }
 
-            // Fetch avatar from PunkPet
+            // Fetch and update avatar from PunkPet
             const punkPetContract = new web3.eth.Contract(PUNKPET_ABI, PUNKPET_ADDRESS);
             try {
                 const [petIds, petTypes] = await punkPetContract.methods.getUserPets(accounts[0]).call();
-                console.log("Pet Types from PunkPet:", petTypes);
+                console.log("Raw petTypes from PunkPet:", petTypes);
                 const userAvatar = document.getElementById('userAvatar');
                 if (petTypes && petTypes.length > 0 && Array.isArray(petTypes)) {
                     const maxPetType = Math.max(...petTypes.map(t => parseInt(t)));
-                    console.log("Max Pet Type:", maxPetType);
+                    console.log("Calculated maxPetType:", maxPetType);
                     if (maxPetType >= 1 && maxPetType <= 77 && avatarImages[maxPetType]) {
                         const avatarUrl = `images/${avatarImages[maxPetType]}`;
                         const avatarLoaded = await testImageLoad(avatarUrl);
-                        console.log(`Avatar (${avatarUrl}) loaded:`, avatarLoaded);
+                        console.log(`Attempting to load avatar: ${avatarUrl}, Success: ${avatarLoaded}`);
                         if (avatarLoaded) {
                             userAvatar.src = avatarUrl;
                         } else {
-                            console.error(`Failed to load avatar: ${avatarUrl}`);
+                            console.error(`Failed to load avatar: ${avatarUrl}, falling back to default`);
                             userAvatar.src = "images/default-avatar.png";
                         }
                     } else {
-                        console.warn("Invalid or unsupported pet type:", maxPetType, "falling back to default");
+                        console.warn("Invalid maxPetType:", maxPetType, "falling back to default");
                         userAvatar.src = "images/default-avatar.png";
                     }
                 } else {
-                    console.log("No pets found or invalid petTypes array");
+                    console.log("No pets found or petTypes is invalid");
                     userAvatar.src = "images/default-avatar.png";
                 }
             } catch (error) {
